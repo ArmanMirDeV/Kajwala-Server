@@ -137,7 +137,26 @@ async function run() {
       res.send(result);
     });
 
-  
+    // Search  , Filter   ,  sort
+
+    //  Search service by title
+    app.get("/services/search/:text", async (req, res) => {
+      const text = req.params.text;
+      const result = await servicesCollection
+        .find({ title: { $regex: text, $options: "i" } })
+        .toArray();
+      res.send(result);
+    });
+
+    // Sort services by price (asc or desc)
+    app.get("/services/sort/price", async (req, res) => {
+      const order = req.query.order === "desc" ? -1 : 1;
+      const result = await servicesCollection
+        .find()
+        .sort({ price: order })
+        .toArray();
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });

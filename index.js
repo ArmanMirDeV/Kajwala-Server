@@ -28,6 +28,7 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+    const db = client.db("kajwalaDB");
 
     // DB  Collections
     const servicesCollection = db.collection("services");
@@ -39,6 +40,12 @@ async function run() {
     app.post("/services", async (req, res) => {
       const newService = req.body;
       const result = await servicesCollection.insertOne(newService);
+      res.send(result);
+    });
+
+    //  Get all services
+    app.get("/services", async (req, res) => {
+      const result = await servicesCollection.find().toArray();
       res.send(result);
     });
 
@@ -86,10 +93,18 @@ async function run() {
       res.send(result);
     });
 
-    // 🔵 Get all bookings
+    //  Get all bookings
     app.get("/bookings", async (req, res) => {
       const cursor = bookingsCollection.find();
       const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    //  Get booking by ID
+    app.get("/bookings/id/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await bookingsCollection.findOne(query);
       res.send(result);
     });
 
@@ -121,6 +136,12 @@ async function run() {
 
     // Review and ratings
     //----------------------
+
+    //  Get all reviews
+    app.get("/reviews", async (req, res) => {
+      const result = await reviewsCollection.find().toArray();
+      res.send(result);
+    });
 
     //  Add a review
     app.post("/reviews", async (req, res) => {

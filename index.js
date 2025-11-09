@@ -34,6 +34,7 @@ async function run() {
     const bookingsCollection = db.collection("bookings");
     const reviewsCollection = db.collection("reviews");
 
+    //Services APIs
     //  Create a new service
     app.post("/services", async (req, res) => {
       const newService = req.body;
@@ -74,6 +75,50 @@ async function run() {
       const result = await servicesCollection.deleteOne(query);
       res.send(result);
     });
+
+    // Booking APIs
+    //-----------------------------
+
+    //  Create a booking
+    app.post("/bookings", async (req, res) => {
+      const booking = req.body;
+      const result = await bookingsCollection.insertOne(booking);
+      res.send(result);
+    });
+
+    // 🔵 Get all bookings
+    app.get("/bookings", async (req, res) => {
+      const cursor = bookingsCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    // Get specific user bookings by email
+    app.get("/bookings/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { userEmail: email };
+      const result = await bookingsCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    //  Update specific  booking status
+    app.put("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const status = req.body.status;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = { $set: { status: status } };
+      const result = await bookingsCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
+
+    //  Delete a booking
+    app.delete("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await bookingsCollection.deleteOne(query);
+      res.send(result);
+    });
+      
       
       
       

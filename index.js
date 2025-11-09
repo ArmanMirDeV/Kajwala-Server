@@ -118,12 +118,26 @@ async function run() {
       const result = await bookingsCollection.deleteOne(query);
       res.send(result);
     });
-      
-      
-      
-      
-      
-      
+
+    // Review and ratings
+    //----------------------
+
+    //  Add a review
+    app.post("/reviews", async (req, res) => {
+      const review = req.body;
+      const result = await reviewsCollection.insertOne(review);
+      res.send(result);
+    });
+
+    //  Get reviews for a specific service
+    app.get("/reviews/:serviceId", async (req, res) => {
+      const serviceId = req.params.serviceId;
+      const query = { serviceId: serviceId };
+      const result = await reviewsCollection.find(query).toArray();
+      res.send(result);
+    });
+
+  
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });

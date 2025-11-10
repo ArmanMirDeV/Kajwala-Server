@@ -161,6 +161,20 @@ async function run() {
     // Search & Sort
     // -----------------------------
 
+    // GET /services/filter?min=50&max=200
+    app.get("/services/filter", async (req, res) => {
+      const min = parseFloat(req.query.min) || 0;
+      const max = parseFloat(req.query.max) || Number.MAX_SAFE_INTEGER;
+      try {
+        const result = await servicesCollection
+          .find({ price: { $gte: min, $lte: max } })
+          .toArray();
+        res.send(result);
+      } catch (err) {
+        res.status(500).send({ error: "Failed to filter services" });
+      }
+    });
+
     app.get("/services/search/:text", async (req, res) => {
       const text = req.params.text;
       const services = await servicesCollection

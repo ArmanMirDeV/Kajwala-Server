@@ -247,6 +247,75 @@ async function run() {
       }
     });
 
+    // GET average rating for a specific service
+    app.get("/services/:id/average-rating", async (req, res) => {
+      try {
+        const serviceId = req.params.id;
+
+        // Fetch the service document
+        const service = await servicesCollection.findOne({
+          _id: new ObjectId(serviceId),
+        });
+
+        if (!service) {
+          return res.status(404).json({ error: "Service not found" });
+        }
+
+        const reviews = service.reviews || [];
+
+        // Calculate average rating
+        const totalRatings = reviews.reduce(
+          (sum, r) => sum + (r.rating || 0),
+          0
+        );
+        const averageRating =
+          reviews.length > 0 ? totalRatings / reviews.length : 0;
+
+        res.json({
+          serviceId,
+          averageRating,
+          totalReviews: reviews.length,
+        });
+      } catch (err) {
+        console.error("Average rating error:", err);
+        res.status(500).json({ error: "Failed to calculate average rating" });
+      }
+    });
+    // GET average rating for a specific service
+    app.get("/services/:id/average-rating", async (req, res) => {
+      try {
+        const serviceId = req.params.id;
+
+        // Fetch the service document
+        const service = await servicesCollection.findOne({
+          _id: new ObjectId(serviceId),
+        });
+
+        if (!service) {
+          return res.status(404).json({ error: "Service not found" });
+        }
+
+        const reviews = service.reviews || [];
+
+        // Calculate average rating
+        const totalRatings = reviews.reduce(
+          (sum, r) => sum + (r.rating || 0),
+          0
+        );
+        const averageRating =
+          reviews.length > 0 ? totalRatings / reviews.length : 0;
+
+        res.json({
+          serviceId,
+          averageRating,
+          totalReviews: reviews.length,
+        });
+      } catch (err) {
+        console.error("Average rating error:", err);
+        res.status(500).json({ error: "Failed to calculate average rating" });
+      }
+    });
+
     app.get("/services/sort/price", async (req, res) => {
       try {
         const order = req.query.order === "desc" ? -1 : 1;

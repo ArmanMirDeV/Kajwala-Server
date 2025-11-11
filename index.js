@@ -11,10 +11,6 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_Pass}@kajwala
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
-
 // MongoDB client setup
 const client = new MongoClient(uri, {
   serverApi: {
@@ -27,6 +23,8 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
+    console.log("Connected to MongoDB!");
+
     const db = client.db("kajwalaDB");
 
     // Collections
@@ -37,184 +35,238 @@ async function run() {
     // -----------------------------
     // Services APIs
     // -----------------------------
-
     app.post("/services", async (req, res) => {
-      const newService = req.body;
-      const result = await servicesCollection.insertOne(newService);
-      res.send(result);
+      try {
+        const result = await servicesCollection.insertOne(req.body);
+        res.json(result);
+      } catch (err) {
+        res.status(500).json({ error: "Failed to add service" });
+      }
     });
 
     app.get("/services", async (req, res) => {
-      const result = await servicesCollection.find().toArray();
-      res.send(result);
+      try {
+        const result = await servicesCollection.find().toArray();
+        res.json(result);
+      } catch (err) {
+        res.status(500).json({ error: "Failed to fetch services" });
+      }
     });
 
     app.get("/services/:id", async (req, res) => {
-      const id = req.params.id;
-      const service = await servicesCollection.findOne({
-        _id: new ObjectId(id),
-      });
-      res.send(service);
+      try {
+        const service = await servicesCollection.findOne({
+          _id: new ObjectId(req.params.id),
+        });
+        res.json(service);
+      } catch (err) {
+        res.status(500).json({ error: "Failed to fetch service" });
+      }
     });
 
     app.get("/my-services/:email", async (req, res) => {
-      const email = req.params.email;
-      const services = await servicesCollection
-        .find({ providerEmail: email })
-        .toArray();
-      res.send(services);
+      try {
+        const services = await servicesCollection
+          .find({ providerEmail: req.params.email })
+          .toArray();
+        res.json(services);
+      } catch (err) {
+        res.status(500).json({ error: "Failed to fetch provider services" });
+      }
     });
 
     app.put("/services/:id", async (req, res) => {
-      const id = req.params.id;
-      const updatedData = req.body;
-      const result = await servicesCollection.updateOne(
-        { _id: new ObjectId(id) },
-        { $set: updatedData }
-      );
-      res.send(result);
+      try {
+        const result = await servicesCollection.updateOne(
+          { _id: new ObjectId(req.params.id) },
+          { $set: req.body }
+        );
+        res.json(result);
+      } catch (err) {
+        res.status(500).json({ error: "Failed to update service" });
+      }
     });
 
     app.delete("/services/:id", async (req, res) => {
-      const id = req.params.id;
       try {
         const result = await servicesCollection.deleteOne({
-          _id: new ObjectId(id),
+          _id: new ObjectId(req.params.id),
         });
-        res.send(result);
+        res.json(result);
       } catch (err) {
-        res.status(500).send({ error: "Failed to delete service" });
+        res.status(500).json({ error: "Failed to delete service" });
       }
     });
 
     // -----------------------------
-    // Booking APIs
+    // Bookings APIs
     // -----------------------------
-
     app.post("/bookings", async (req, res) => {
-      const booking = req.body;
-      const result = await bookingsCollection.insertOne(booking);
-      res.send(result);
+      try {
+        const result = await bookingsCollection.insertOne(req.body);
+        res.json(result);
+      } catch (err) {
+        res.status(500).json({ error: "Failed to add booking" });
+      }
     });
 
     app.get("/bookings", async (req, res) => {
-      const result = await bookingsCollection.find().toArray();
-      res.send(result);
+      try {
+        const result = await bookingsCollection.find().toArray();
+        res.json(result);
+      } catch (err) {
+        res.status(500).json({ error: "Failed to fetch bookings" });
+      }
     });
 
     app.get("/bookings/id/:id", async (req, res) => {
-      const id = req.params.id;
-      const booking = await bookingsCollection.findOne({
-        _id: new ObjectId(id),
-      });
-      res.send(booking);
+      try {
+        const booking = await bookingsCollection.findOne({
+          _id: new ObjectId(req.params.id),
+        });
+        res.json(booking);
+      } catch (err) {
+        res.status(500).json({ error: "Failed to fetch booking" });
+      }
     });
 
     app.get("/bookings/:email", async (req, res) => {
-      const email = req.params.email;
-      const bookings = await bookingsCollection
-        .find({ userEmail: email })
-        .toArray();
-      res.send(bookings);
+      try {
+        const bookings = await bookingsCollection
+          .find({ userEmail: req.params.email })
+          .toArray();
+        res.json(bookings);
+      } catch (err) {
+        res.status(500).json({ error: "Failed to fetch bookings for user" });
+      }
+    });
+
+    app.get("/bookings/provider/:email", async (req, res) => {
+      try {
+        const providerEmail = req.params.email;
+
+        // Get all services by provider
+        const services = await servicesCollection
+          .find({ providerEmail })
+          .toArray();
+        const serviceIds = services.map((s) => s._id);
+
+        // Get bookings for those services
+        const bookings = await bookingsCollection
+          .find({ serviceId: { $in: serviceIds } })
+          .toArray();
+        res.json(bookings);
+      } catch (err) {
+        res.status(500).json({ error: "Failed to fetch provider bookings" });
+      }
     });
 
     app.put("/bookings/:id", async (req, res) => {
-      const id = req.params.id;
-      const { status } = req.body;
-      const result = await bookingsCollection.updateOne(
-        { _id: new ObjectId(id) },
-        { $set: { status } }
-      );
-      res.send(result);
+      try {
+        const { status } = req.body;
+        const result = await bookingsCollection.updateOne(
+          { _id: new ObjectId(req.params.id) },
+          { $set: { status } }
+        );
+        res.json(result);
+      } catch (err) {
+        res.status(500).json({ error: "Failed to update booking" });
+      }
     });
 
     app.delete("/bookings/:id", async (req, res) => {
-      const id = req.params.id;
-      const result = await bookingsCollection.deleteOne({
-        _id: new ObjectId(id),
-      });
-      res.send(result);
+      try {
+        const result = await bookingsCollection.deleteOne({
+          _id: new ObjectId(req.params.id),
+        });
+        res.json(result);
+      } catch (err) {
+        res.status(500).json({ error: "Failed to delete booking" });
+      }
     });
 
     // -----------------------------
     // Reviews APIs
     // -----------------------------
-
     app.patch("/services/:id/review", async (req, res) => {
-      const { id } = req.params;
-      const review = req.body;
       try {
         const result = await servicesCollection.updateOne(
-          { _id: new ObjectId(id) },
-          { $push: { reviews: review } }
+          { _id: new ObjectId(req.params.id) },
+          { $push: { reviews: req.body } }
         );
-        res.send(result);
+        res.json(result);
       } catch (err) {
-        console.error(err);
-        res.status(500).send({ error: "Failed to add review" });
+        res.status(500).json({ error: "Failed to add review" });
       }
     });
 
-
-    app.get("/reviews", async (req, res) => {
-      const result = await reviewsCollection.find().toArray();
-      res.send(result);
+    app.get("/reviews/:serviceId", async (req, res) => {
+      try {
+        const reviews = await reviewsCollection
+          .find({ serviceId: req.params.serviceId })
+          .toArray();
+        res.json(reviews);
+      } catch (err) {
+        res.status(500).json({ error: "Failed to fetch reviews" });
+      }
     });
 
     app.post("/reviews", async (req, res) => {
-      const review = req.body;
-      const result = await reviewsCollection.insertOne(review);
-      res.send(result);
-    });
-
-    app.get("/reviews/:serviceId", async (req, res) => {
-      const serviceId = req.params.serviceId;
-      const reviews = await reviewsCollection.find({ serviceId }).toArray();
-      res.send(reviews);
-    });
-
-    // -----------------------------
-    // Search & Sort
-    // -----------------------------
-
-    // GET /services/filter?min=50&max=200
-    app.get("/services/filter", async (req, res) => {
-      const min = parseFloat(req.query.min) || 0;
-      const max = parseFloat(req.query.max) || Number.MAX_SAFE_INTEGER;
       try {
-        const result = await servicesCollection
+        const result = await reviewsCollection.insertOne(req.body);
+        res.json(result);
+      } catch (err) {
+        res.status(500).json({ error: "Failed to add review" });
+      }
+    });
+
+    // -----------------------------
+    // Search & Filter APIs
+    // -----------------------------
+    app.get("/services/filter", async (req, res) => {
+      try {
+        const min = parseFloat(req.query.min) || 0;
+        const max = parseFloat(req.query.max) || Number.MAX_SAFE_INTEGER;
+        const services = await servicesCollection
           .find({ price: { $gte: min, $lte: max } })
           .toArray();
-        res.send(result);
+        res.json(services);
       } catch (err) {
-        res.status(500).send({ error: "Failed to filter services" });
+        res.status(500).json({ error: "Failed to filter services" });
       }
     });
 
     app.get("/services/search/:text", async (req, res) => {
-      const text = req.params.text;
-      const services = await servicesCollection
-        .find({ title: { $regex: text, $options: "i" } })
-        .toArray();
-      res.send(services);
+      try {
+        const services = await servicesCollection
+          .find({ title: { $regex: req.params.text, $options: "i" } })
+          .toArray();
+        res.json(services);
+      } catch (err) {
+        res.status(500).json({ error: "Failed to search services" });
+      }
     });
 
     app.get("/services/sort/price", async (req, res) => {
-      const order = req.query.order === "desc" ? -1 : 1;
-      const services = await servicesCollection
-        .find()
-        .sort({ price: order })
-        .toArray();
-      res.send(services);
+      try {
+        const order = req.query.order === "desc" ? -1 : 1;
+        const services = await servicesCollection
+          .find()
+          .sort({ price: order })
+          .toArray();
+        res.json(services);
+      } catch (err) {
+        res.status(500).json({ error: "Failed to sort services" });
+      }
     });
-
-    console.log("Connected to MongoDB!");
   } finally {
-    // client.close(); // Do not close client if server is running continuously
+    // Do not close client if server runs continuously
   }
 }
 
 run().catch(console.dir);
+
+app.get("/", (req, res) => res.send("Hello World!"));
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

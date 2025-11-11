@@ -140,6 +140,22 @@ async function run() {
     // Reviews APIs
     // -----------------------------
 
+    app.patch("/services/:id/review", async (req, res) => {
+      const { id } = req.params;
+      const review = req.body;
+      try {
+        const result = await servicesCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $push: { reviews: review } }
+        );
+        res.send(result);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ error: "Failed to add review" });
+      }
+    });
+
+
     app.get("/reviews", async (req, res) => {
       const result = await reviewsCollection.find().toArray();
       res.send(result);

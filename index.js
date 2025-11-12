@@ -30,9 +30,8 @@ async function run() {
     // Collections
     const servicesCollection = db.collection("services");
     const bookingsCollection = db.collection("bookings");
-    const reviewsCollection = db.collection("reviews");
 
-    // -----------------------------
+  
     // Services APIs
     // -----------------------------
     app.post("/services", async (req, res) => {
@@ -98,7 +97,6 @@ async function run() {
       }
     });
 
-    // -----------------------------
     // Bookings APIs
     // -----------------------------
     app.post("/bookings", async (req, res) => {
@@ -185,7 +183,6 @@ async function run() {
       }
     });
 
-    // -----------------------------
     // Reviews APIs
     // -----------------------------
     app.patch("/services/:id/review", async (req, res) => {
@@ -220,7 +217,6 @@ async function run() {
       }
     });
 
-    // -----------------------------
     // Search & Filter APIs
     // -----------------------------
     app.get("/services/filter", async (req, res) => {
@@ -313,6 +309,56 @@ async function run() {
       } catch (err) {
         console.error("Average rating error:", err);
         res.status(500).json({ error: "Failed to calculate average rating" });
+      }
+    });
+
+    // Provider Analytics API
+    // -----------------------------
+    app.get("/provider-stats/:email", async (req, res) => {
+      try {
+        const providerEmail = req.params.email;
+
+        //  Get all services by provider
+        const services = await servicesCollection
+          .find({ providerEmail })
+          .toArray();
+        const serviceIds = services.map((s) => s._id);
+
+        //  Count total services
+        const serviceCount = services.length;
+
+        //  Get all bookings for those services
+        const bookings = await bookingsCollection
+          .find({ serviceId: { $in: serviceIds } })
+          .toArray();
+        const totalBookings = bookings.length;
+
+        //  Calculate total revenue
+        const totalRevenue = bookings.reduce(
+          (sum, booking) => sum + (booking.price || 0),
+          0
+        );
+
+        //  Calculate average rating
+        let totalRatings = 0;
+        let totalReviews = 0;
+        services.forEach((s) => {
+          const reviews = s.reviews || [];
+          totalRatings += reviews.reduce((sum, r) => sum + (r.rating || 0), 0);
+          totalReviews += reviews.length;
+        });
+        const averageRating =
+          totalReviews > 0 ? totalRatings / totalReviews : 0;
+
+        res.json({
+          serviceCount,
+          totalBookings,
+          totalRevenue,
+          averageRating: Number(averageRating.toFixed(2)),
+        });
+      } catch (err) {
+        console.error("Stats error:", err);
+        res.status(500).json({ error: "Failed to fetch provider stats" });
       }
     });
 
